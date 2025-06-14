@@ -8,33 +8,23 @@ import json
 import os
 from datetime import datetime
 import time
-
 # Telegram Bot Token from environment variable
 TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
-if not TOKEN:
-    raise RuntimeError("TELEGRAM_BOT_TOKEN env variable not set")
-
+if not TOKEN:raise RuntimeError("TELEGRAM_BOT_TOKEN env variable not set")
 bot = telebot.TeleBot(TOKEN)
-
 # Load subscribers data from JSON file
 subscribers = {}
 subscribers_file = 'subscribers.json'
 if os.path.exists(subscribers_file):
-    try:
-        with open(subscribers_file, 'r') as f:
-            subscribers = json.load(f)
-    except json.JSONDecodeError:
-        subscribers = {}
-else:
-    # Create an empty JSON file if it doesn't exist
-    with open(subscribers_file, 'w') as f:
-        json.dump(subscribers, f)
-
+try:with open(subscribers_file, 'r') as f:
+subscribers = json.load(f)
+except json.JSONDecodeError:
+subscribers = {}
+else:# Create an empty JSON file if it doesn't exist with open(subscribers_file, 'w') as f:json.dump(subscribers, f)
 # Function to save subscribers data to JSON file
 def save_subscribers():
     with open(subscribers_file, 'w') as f:
         json.dump(subscribers, f, ensure_ascii=False, indent=4)
-
 # List of positive affirmations for each supported language
 affirmations = {
     'en': [
@@ -43,8 +33,7 @@ affirmations = {
         "Your love and care make all the difference.",
         "You are exactly what your child needs.",
         "Your best is enough.",
-        "You are strong, capable, and loving."
-    ],
+        "You are strong, capable, and loving."],
     'ru': [
         "Ты замечательная мама.",
         "Ты делаешь потрясающую работу.",
@@ -62,7 +51,6 @@ affirmations = {
         "Eres fuerte, capaz y amorosa."
     ]
 }
-
 # Temporary data for users in setup process (for language and city steps)
 user_setup_steps = {}
 
@@ -89,7 +77,6 @@ def handle_start(message):
         bot.send_message(message.chat.id, welcome_text)
         # Save state that next step is language selection
         user_setup_steps[user_id] = {'step': 'language'}
-
 # Handler for text messages (to capture language and city inputs during setup and language change)
 @bot.message_handler(func=lambda message: not message.text.startswith('/'))
 def handle_text(message):
@@ -218,7 +205,6 @@ def handle_text(message):
             # Clear the user from setup steps
             user_setup_steps.pop(user_id, None)
             return
-
 # Command handler for /stop to unsubscribe
 @bot.message_handler(commands=['stop'])
 def handle_stop(message):
@@ -237,7 +223,6 @@ def handle_stop(message):
         # Remove from subscribers
         subscribers.pop(user_id, None)
         save_subscribers()
-
 # Command handler for /language to change language
 @bot.message_handler(commands=['language'])
 def handle_language(message):
@@ -255,7 +240,6 @@ def handle_language(message):
         bot.send_message(message.chat.id, prompts.get(lang, prompts['en']))
         # Set state to language change
         user_setup_steps[user_id] = {'step': 'language_change'}
-
 # Background thread to send daily affirmations at 20:00 local time for each user
 def schedule_affirmations():
     while True:
@@ -284,10 +268,8 @@ def schedule_affirmations():
                             save_subscribers()
         # Wait 60 seconds before checking again
         time.sleep(60)
-
 # Start the scheduler thread
 scheduler_thread = threading.Thread(target=schedule_affirmations, daemon=True)
 scheduler_thread.start()
-
 # Start the bot polling loop (to handle incoming messages)
 bot.polling(none_stop=True)
